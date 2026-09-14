@@ -1,0 +1,56 @@
+# Render Blueprint, free tier throughout.
+#
+# Free-tier realities this config accepts:
+#   * the web service sleeps after 15 minutes with no inbound traffic and takes
+#     about a minute to wake. Open the URL a few minutes before a demo. A job
+#     interrupted by sleep resumes on the next boot.
+#   * 512 MB RAM and 0.1 CPU. Measured peak while indexing all eight supported
+#     file types and answering questions: ~155 MB. MAX_UPLOAD_MB bounds the rest.
+#   * the database is 1 GB, fixed, and is deleted 30 days after creation.
+#
+# Set GEMINI_API_KEY in the dashboard; it is never committed.
+services:
+  - type: web
+    name: doc-chat-platform
+    runtime: docker
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: doc-chat-db
+          property: connectionString
+      - key: GEMINI_API_KEY
+        sync: false
+
+      # Sign-in is OFF: the dashboard opens straight up. Anyone with the URL can
+      # read every uploaded document, upload more, and spend the Gemini quota.
+      # Set to "true" and add ADMIN_PASSWORD (sync: false) to require a login.
+      - key: AUTH_ENABLED
+        value: "false"
+      - key: ADMIN_TOKEN
+        generateValue: true
+      - key: COOKIE_SECURE
+        value: "true"          # Render is always HTTPS; matters once sign-in is on
+
+      - key: EMBEDDING_MODEL
+        value: gemini-embedding-2
+      - key: LLM_MODEL
+        value: gemini-3.1-flash-lite
+      - key: PARSER
+        value: lite
+      - key: MAX_UPLOAD_MB
+        value: "10"
+      - key: EMBED_BATCH_SIZE
+        value: "32"
+      - key: WORKER_CONCURRENCY
+        value: "1"
+      - key: CHUNK_TARGET_TOKENS
+        value: "500"
+      - key: LOG_LEVEL
+        value: INFO
+
+databases:
+  - name: doc-chat-db
+    plan: free
+    postgresMajorVersion: "16"

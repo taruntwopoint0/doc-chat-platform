@@ -1,0 +1,64 @@
+[project]
+name = "doc-chat-platform"
+version = "0.1.0"
+description = "Multi-tenant, document-grounded chatbot platform - ingestion spine"
+requires-python = ">=3.11"
+
+# Default install: no ML frameworks. Nothing here pulls PyTorch, CUDA, or a
+# model download, which is what keeps the runtime image small.
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "python-multipart>=0.0.12",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+    "sqlalchemy[asyncio]>=2.0.36",
+    "asyncpg>=0.30",
+    "alembic>=1.14",
+    "pgvector>=0.3.6",
+    "google-genai>=1.0",
+    "openpyxl>=3.1",
+    "xlrd>=2.0",
+    "pymupdf>=1.24",
+    "python-docx>=1.1",
+    "python-pptx>=1.0",
+]
+
+[project.optional-dependencies]
+# Opt-in, and heavy: docling brings PyTorch and downloads layout/OCR models on
+# first use. Install it only for a deployment that runs PARSER=docling because
+# it needs OCR on scanned PDFs.
+docling = ["docling>=2.15"]
+dev = ["pytest>=8.3", "pytest-asyncio>=0.24", "httpx>=0.27", "ruff>=0.8", "pgserver>=0.1.4"]
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+# One event loop for the whole session: the async engine holds a connection
+# pool, and a per-test loop would strand those connections on a closed loop.
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning"]
+markers = ["no_db: test needs no database and skips the truncate fixture"]
+
+[tool.ruff]
+line-length = 90
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.isort]
+# There is a local ./alembic directory, so ruff would otherwise treat the
+# installed alembic package as first-party.
+known-third-party = ["alembic"]
+
+[tool.ruff.lint.per-file-ignores]
+# B008 flags function calls in argument defaults. That is exactly how
+# FastAPI declares dependencies, so it is a false positive in route modules.
+"app/api/*.py" = ["B008"]
+# Migrations are column definitions; wrapping them hurts readability.
+"alembic/versions/*.py" = ["E501"]

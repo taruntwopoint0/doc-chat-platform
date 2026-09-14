@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.env
+*.egg-info/
+.coverage
+htmlcov/
+
+# Local Postgres cluster (pgserver) -- your documents live here
+.pgdata/
+
+# Database dumps -- contain your documents, never commit
+backups/

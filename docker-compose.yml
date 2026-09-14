@@ -1,0 +1,38 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: docchat
+      POSTGRES_PASSWORD: docchat
+      POSTGRES_DB: docchat
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U docchat -d docchat"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # The app rewrites postgresql:// to the asyncpg driver itself.
+      DATABASE_URL: postgresql://docchat:docchat@db:5432/docchat
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-local-dev-token}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-gemini-embedding-2}
+      LLM_MODEL: ${LLM_MODEL:-gemini-3.1-flash-lite}
+      PARSER: ${PARSER:-lite}
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-50}
+      CHUNK_TARGET_TOKENS: ${CHUNK_TARGET_TOKENS:-500}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "8000:8000"
+
+volumes:
+  pgdata:

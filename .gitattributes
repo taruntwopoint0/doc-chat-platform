@@ -1,0 +1,14 @@
+# Normalise line endings to LF in the repository. The app is built and run on
+# Linux (Docker, Render); CRLF in a shell-invoked config or script there is a
+# classic "works on my machine" failure. Windows checkouts still work.
+* text=auto eol=lf
+
+# Binary files: never touch.
+*.png binary
+*.jpg binary
+*.ico binary
+*.pdf binary
+*.docx binary
+*.pptx binary
+*.xlsx binary
+*.dump binary
