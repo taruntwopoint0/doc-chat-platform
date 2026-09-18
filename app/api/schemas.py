@@ -54,6 +54,18 @@ class WorkspaceDetail(WorkspaceSummary):
     documents: DocumentCounts
 
 
+class WorkspaceListItem(WorkspaceSummary):
+    """One card on the dashboard's workspace gallery, complete without a
+    second request per workspace."""
+
+    documents: DocumentCounts
+    #: The most frequent corpus-derived topics and document types, most common first.
+    top_topics: list[str] = Field(default_factory=list)
+    document_types: list[str] = Field(default_factory=list)
+    #: Latest of: created, a document added or indexed, this user's last message.
+    last_activity_at: datetime
+
+
 class DocumentSummary(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

@@ -270,19 +270,26 @@ pg_dump -h 127.0.0.1 -p <port> -U postgres -Fc -f backups/docchat.dump postgres
 
 ### The dashboard
 
-Open `http://localhost:8000/`. Create a workspace with **+ New** — name it for
-what it holds, e.g. "Compliance" — drop files in, and watch each one move
+Open `http://localhost:8000/`. The home screen shows every workspace as a card:
+its document types, document and passage counts, main topics, indexing state
+and last activity. **New workspace** adds one — name it for what it holds, e.g.
+"Compliance". Open a card, drop files into the library, and watch each one move
 through `parsing → profiling → chunking → embedding → ready`. Then ask
-questions on the right.
+questions on the right, or start from a suggested question built from the
+workspace's own topics.
 
-Every claim carries a `[n]` citation you can expand to read the exact passage.
+Every claim carries a highlighted `[n]` citation. Sources are grouped by file
+under each answer; click a citation or a source chip to read the exact passage.
 If the documents don't cover a question you get a refusal, styled differently
 from an answer so it is never mistaken for one. Conversations are saved per
 workspace until **Clear chat**; **Delete** removes a workspace and everything in
-it. Saying "hi" describes what the workspace contains.
+it. Saying "hi" describes what the workspace contains. Pages live in the URL
+(`#/w/<id>`), so Back and reload work, and the theme follows the system's light
+or dark setting.
 
 The UI is plain HTML, CSS and JavaScript served by FastAPI — no build step and
-no `node_modules`. Model answers are rendered as markdown by `markdown.js`,
+no `node_modules`. Fonts load from Google Fonts, with system fonts as the
+fallback. Model answers are rendered as markdown by `markdown.js`,
 which HTML-escapes everything **before** formatting: answers quote uploaded
 documents, and a document is untrusted input.
 
@@ -340,7 +347,7 @@ change.
 | `DELETE` | `/api/documents/{id}` | Delete document, chunks and stored original |
 | `POST` | `/api/workspaces/{id}/chat` | Ask a question; cited answer, or a refusal |
 | `POST` | `/api/workspaces/{id}/search` | Raw hybrid search, no LLM — for debugging retrieval |
-| `GET` | `/api/workspaces` | List workspaces (the dashboard's picker) |
+| `GET` | `/api/workspaces` | List workspaces with card data: counts, top topics, last activity |
 | `GET` | `/api/workspaces/{id}/history` | This user's conversation in this workspace |
 | `DELETE` | `/api/workspaces/{id}/history` | Clear it. Documents are untouched |
 | `POST` | `/api/auth/login` | Username + password → session cookie |

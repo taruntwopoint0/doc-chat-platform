@@ -3,111 +3,146 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Document chat</title>
+<title>Document Chat</title>
 <!-- Inline icon: no /favicon.ico request, so no 404 on every page load. -->
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%23161920%27/%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%277%27 fill=%27%236aa9ff%27/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230F1A2A'/%3E%3Cpath d='M10 7h9l4 4v13a1 1 0 0 1-1 1H10a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z' fill='%23fff'/%3E%3Crect x='11.5' y='14' width='9' height='3' rx='1' fill='%23FFD84D'/%3E%3Crect x='11.5' y='19.5' width='6.5' height='1.6' rx='.8' fill='%230F1A2A'/%3E%3C/svg%3E">
+<!-- Web fonts are an enhancement: every stack falls back to system faces. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
 <link rel="stylesheet" href="/static/app.css">
+<link rel="stylesheet" href="/static/home.css">
+<link rel="stylesheet" href="/static/workspace.css">
 </head>
 <body>
 
-<!-- Sign in ------------------------------------------------------------- -->
+<!-- Sign in (only when AUTH_ENABLED=true) -------------------------------- -->
 <div id="login" class="login" hidden>
   <form id="login-form" class="login-card">
-    <div class="brand"><span class="dot"></span><h1>Document chat</h1></div>
-    <p class="muted small">Sign in to upload documents and ask questions about them.</p>
+    <div class="brand"><span class="logo" data-icon="logo"></span><span class="brand-name">Document Chat</span></div>
+    <h1 class="login-title">Sign in</h1>
+    <p class="muted">Upload documents and ask questions about them.</p>
     <label for="username">Username</label>
     <input id="username" type="text" autocomplete="username" required>
     <label for="password">Password</label>
     <input id="password" type="password" autocomplete="current-password" required>
-    <button id="login-btn" type="submit">Sign in</button>
-    <p id="login-error" class="login-error" hidden></p>
+    <button id="login-btn" class="btn primary" type="submit">Sign in</button>
+    <p id="login-error" class="form-error" hidden></p>
   </form>
 </div>
 
-<!-- App ----------------------------------------------------------------- -->
+<!-- App ------------------------------------------------------------------ -->
 <div id="app" hidden>
-<header>
-  <div class="brand">
-    <span class="dot"></span>
-    <h1>Document chat</h1>
-  </div>
-  <div class="head-right">
-    <select id="workspace" title="Switch workspace"></select>
-    <button id="new-workspace" class="ghost" title="Start a new workspace">+ New</button>
-    <button id="delete-workspace" class="ghost danger-ghost"
-            title="Delete this workspace and everything in it">Delete</button>
-    <span id="health" class="pill" title="Service health">&middot;</span>
-    <span id="whoami" class="muted small"></span>
-    <button id="logout" class="ghost">Sign out</button>
-  </div>
-</header>
-
-<!-- Inline workspace creator. A native prompt() is blocked in embedded
-     browsers, and an inline form is better anyway. -->
-<form id="ws-form" class="ws-form" hidden>
-  <label for="ws-name">Name this workspace</label>
-  <input id="ws-name" type="text" placeholder="e.g. Compliance" maxlength="120">
-  <button type="submit">Create</button>
-  <button type="button" id="ws-cancel" class="ghost">Cancel</button>
-  <span class="muted small">Documents and chat are kept separate per workspace.</span>
-</form>
-
-<main>
-  <section class="panel" id="left">
-    <div class="panel-head">
-      <h2>Documents</h2>
-      <span id="doc-count" class="muted small"></span>
+  <header class="topbar">
+    <nav class="crumbs" aria-label="Location">
+      <a href="#/" class="brand" title="All workspaces">
+        <span class="logo" data-icon="logo"></span><span class="brand-name">Document Chat</span>
+      </a>
+      <span id="crumb-sep" class="crumb-sep" hidden>/</span>
+      <span id="crumb-ws" class="crumb-ws" hidden></span>
+    </nav>
+    <div class="topbar-right">
+      <span id="health" class="health" title="Service health"><i></i><span>Connecting</span></span>
+      <span id="whoami" class="whoami"></span>
+      <button id="logout" class="btn ghost small" hidden>Sign out</button>
     </div>
+  </header>
 
-    <div id="drop" class="drop">
-      <input id="file" type="file" multiple hidden>
-      <p><strong>Drop files</strong> or <button id="browse" class="link" type="button">browse</button></p>
-      <p class="muted small">PDF, DOCX, PPTX, XLSX, CSV, TXT, MD, HTML
-         &middot; <span id="limit">&hellip;</span> per file</p>
+  <!-- Home: every workspace as a card --------------------------------- -->
+  <main id="home" class="view home">
+    <div class="home-inner">
+      <div class="page-head">
+        <div>
+          <h1 class="page-title">Workspaces</h1>
+          <p class="page-sub">Each workspace is its own library of documents, with its own conversation.</p>
+        </div>
+        <div class="page-tools">
+          <input id="ws-filter" class="input search" type="search" placeholder="Find a workspace" aria-label="Find a workspace" hidden>
+          <button id="new-workspace" class="btn primary"><span data-icon="plus"></span>New workspace</button>
+        </div>
+      </div>
+
+      <div id="ws-grid" class="ws-grid" aria-live="polite">
+        <!-- A native prompt() is blocked in embedded browsers; this card is the form. -->
+        <form id="ws-form" class="ws-card ws-new" hidden>
+          <label for="ws-name" class="ws-new-label">Name the new workspace</label>
+          <input id="ws-name" class="input" type="text" placeholder="e.g. Compliance" maxlength="120" autocomplete="off">
+          <p class="muted small">Use one workspace per subject. Its documents and chat stay separate from the others.</p>
+          <div class="ws-new-actions">
+            <button type="button" id="ws-cancel" class="btn ghost">Cancel</button>
+            <button type="submit" class="btn primary">Create workspace</button>
+          </div>
+        </form>
+      </div>
+
+      <div id="ws-empty" class="empty-state" hidden>
+        <span class="empty-art" data-icon="logo"></span>
+        <h2>No workspaces yet</h2>
+        <p class="muted">Create one for a subject, such as “Compliance” or “Onboarding”, then add its documents.</p>
+        <button id="ws-empty-new" class="btn primary"><span data-icon="plus"></span>Create your first workspace</button>
+      </div>
     </div>
+  </main>
 
-    <ul id="docs" class="docs"></ul>
-
-    <details id="vocab-wrap" class="vocab">
-      <summary>Workspace vocabulary</summary>
-      <div id="vocab" class="muted small"></div>
-    </details>
-  </section>
-
-  <section class="panel" id="right">
-    <div class="panel-head">
-      <h2>Ask</h2>
-      <div class="head-actions">
-        <span class="muted small">Answers come only from this workspace.</span>
-        <button id="clear-chat" class="ghost small-btn" title="Clear this conversation">
-          Clear chat
-        </button>
+  <!-- One workspace: library + conversation ------------------------------ -->
+  <main id="workspace" class="view workspace" hidden>
+    <div class="ws-head">
+      <div class="ws-head-text">
+        <h1 id="ws-title" class="page-title"></h1>
+        <p id="ws-meta" class="ws-meta"></p>
+      </div>
+      <div class="ws-actions">
+        <button id="clear-chat" class="btn ghost">Clear chat</button>
+        <button id="delete-workspace" class="btn ghost danger"><span data-icon="trash"></span>Delete</button>
       </div>
     </div>
 
-    <div id="chat" class="chat"></div>
+    <div class="ws-body">
+      <aside class="panel library" aria-label="Documents">
+        <div class="panel-head">
+          <h2>Library</h2>
+          <span id="doc-count" class="count"></span>
+        </div>
+        <div id="drop" class="drop">
+          <input id="file" type="file" multiple hidden>
+          <span class="drop-icon" data-icon="upload"></span>
+          <p><strong>Drop files here</strong> or <button id="browse" class="link" type="button">browse</button></p>
+          <p class="drop-hint">PDF · Word · PowerPoint · Excel · CSV · Text · HTML<br><span id="limit"></span></p>
+        </div>
+        <ul id="docs" class="docs"></ul>
+        <div id="topics-wrap" class="topics" hidden>
+          <h3>Topics in this workspace</h3>
+          <div id="vocab" class="chips"></div>
+        </div>
+      </aside>
 
-    <form id="ask-form" class="ask">
-      <textarea id="question" rows="1" placeholder="Ask about your documents…"
-                autocomplete="off"></textarea>
-      <button id="send" type="submit">Ask</button>
-    </form>
-  </section>
-</main>
+      <section class="panel conversation" aria-label="Conversation">
+        <div id="chat" class="chat"></div>
+        <form id="ask-form" class="ask">
+          <div class="composer">
+            <textarea id="question" rows="1" placeholder="Ask about these documents…" autocomplete="off"></textarea>
+            <button id="send" class="send" type="submit" title="Send" aria-label="Send"><span data-icon="send"></span></button>
+          </div>
+          <p class="ask-hint">Answers come only from this workspace’s documents · Shift+Enter for a new line</p>
+        </form>
+      </section>
+    </div>
+  </main>
 </div>
 
 <!-- Confirmation. confirm() is blocked in embedded browsers too. -->
 <div id="confirm" class="modal" hidden>
-  <div class="modal-card">
+  <div class="modal-card" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title">
+    <h2 id="confirm-title" class="modal-title">Are you sure?</h2>
     <p id="confirm-text"></p>
     <div class="modal-actions">
-      <button id="confirm-cancel" class="ghost" type="button">Cancel</button>
-      <button id="confirm-ok" class="danger" type="button">Delete</button>
+      <button id="confirm-cancel" class="btn ghost" type="button">Cancel</button>
+      <button id="confirm-ok" class="btn danger-solid" type="button">Delete</button>
     </div>
   </div>
 </div>
 
-<div id="toast" class="toast" hidden></div>
+<div id="toast" class="toast" role="status" hidden></div>
 <!-- Plain scripts sharing globals: order matters. See core.js. -->
 <script src="/static/markdown.js"></script>
 <script src="/static/core.js"></script>

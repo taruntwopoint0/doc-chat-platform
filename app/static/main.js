@@ -1,26 +1,51 @@
-/* Boot: health, identity, first paint. Loaded last, so every function the
- * other scripts define exists before anything here runs. */
+/* Boot, routing and health. Loaded last, so every function the other scripts
+ * define exists before anything here runs.
+ *
+ * Routes live in the URL hash so Back works and a reload stays put:
+ *   #/          the workspace gallery
+ *   #/w/<id>    one workspace
+ */
 "use strict";
 
+function showView(name) {
+  $("home").hidden = name !== "home";
+  $("workspace").hidden = name !== "workspace";
+}
+
+function setCrumb(name) {
+  $("crumb-sep").hidden = !name;
+  $("crumb-ws").hidden = !name;
+  $("crumb-ws").textContent = name || "";
+}
+
+async function route() {
+  const match = /^#\/w\/([0-9a-f-]{36})$/i.exec(location.hash);
+  if (match) await openWorkspace(match[1]);
+  else await openHome();
+}
+
+window.addEventListener("hashchange", () => { route(); });
+
 async function health() {
+  const el = $("health");
+  const label = el.querySelector("span");
   try {
-    const h = await (await fetch("/health")).json();
-    authEnabled = !!h.auth_enabled;
-    if (h.max_upload_mb) {
-      maxUploadMb = h.max_upload_mb;
-      $("limit").textContent = `max ${maxUploadMb} MB`;
+    const info = await (await fetch("/health")).json();
+    authEnabled = !!info.auth_enabled;
+    if (info.max_upload_mb) {
+      maxUploadMb = info.max_upload_mb;
+      $("limit").textContent = `Up to ${maxUploadMb} MB per file`;
     }
     // Nothing to sign out of when nobody signs in.
     $("logout").hidden = !authEnabled;
-    const el = $("health");
-    el.textContent = h.status === "ok" ? "ok" : "down";
-    el.className = "pill " + (h.status === "ok" ? "ok" : "bad");
-    el.title = `db ${h.database} · ${h.pending_jobs} job(s) queued · parser ${h.parser}`;
-    return h.status === "ok";
+    const ok = info.status === "ok";
+    el.className = "health " + (ok ? "ok" : "bad");
+    label.textContent = ok ? "Online" : "Degraded";
+    el.title = `Database ${info.database} · ${info.pending_jobs ?? 0} job(s) queued · parser ${info.parser}`;
+    return ok;
   } catch {
-    const el = $("health");
-    el.textContent = "down";
-    el.className = "pill bad";
+    el.className = "health bad";
+    label.textContent = "Offline";
     el.title = "The server is unreachable";
     return false;
   }
@@ -28,12 +53,13 @@ async function health() {
 
 async function start() {
   $("whoami").textContent = authEnabled && me ? (me.display_name || me.username) : "";
-  // Creating and deleting workspaces are admin actions.
-  const admin = !me || me.is_admin;
+  // Creating, uploading and deleting are admin actions.
+  const admin = isAdmin();
   $("new-workspace").hidden = !admin;
+  $("ws-empty-new").hidden = !admin;
   $("delete-workspace").hidden = !admin;
-  await loadWorkspaces();
-  await Promise.all([refresh(), loadHistory()]);
+  $("drop").hidden = !admin;
+  await route();
 }
 
 async function boot() {
